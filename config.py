@@ -34,7 +34,7 @@ KEYWORD_LIST = [
     "registration",
     "diagnosis",
 
-    # 方法（CV常见 + 医学高频）
+    # 方法
     "deep learning",
     "transformer",
     "self-supervised",
