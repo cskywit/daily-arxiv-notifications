@@ -1,35 +1,39 @@
 name: Arxiv Daily
 
 on:
+  # GitHub Actions 的 cron 使用 UTC
+  # 下面是：周一到周五，UTC 02:00（北京时间约 10:00）
   schedule:
-    - cron: "0 1 * * *"
+    - cron: "0 2 * * 1-5"
   workflow_dispatch:
 
 jobs:
-  notify:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.8"
           cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
+          pip install -r requirements.txt
 
+      # 如果 main.py 需要 GitHub token（比如访问 API），就保留这个环境变量
       - name: Run main.py (generate mail.html)
+        env:
+          GITHUB: ${{ secrets.GITHUB }}
         run: |
           python -u main.py
 
+      # 用 mail.html 是否存在且非空，决定是否发送邮件
       - name: Decide whether to send mail
         run: |
           if [ -s mail.html ]; then
@@ -40,21 +44,22 @@ jobs:
             echo "mail.html missing or empty -> skip sending"
           fi
 
-      - name: Send mail (QQ SMTP, Scheme B)
+      - name: Send mail (Scheme B: QQ SMTP)
         if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
+          # 方案B：不要用 connection_url
           server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
           server_port: 465
           secure: true
 
           username: ${{ secrets.MAIL_USERNAME }}       # xxxx@qq.com
-          password: ${{ secrets.MAIL_PASSWORD }}       # QQ SMTP 授权码（不是QQ密码）
+          password: ${{ secrets.MAIL_PASSWORD }}       # QQ邮箱SMTP授权码（不是QQ密码）
 
           subject: Arxiv Papers of Today
           to: ${{ secrets.MAIL_TO }}
 
-          # from 必填：优先用 MAIL_FROM（如 "Arxiv Bot <xxxx@qq.com>"），否则退化为 MAIL_USERNAME
+          # from 必填：优先 MAIL_FROM，否则退化为 MAIL_USERNAME
           from: ${{ secrets.MAIL_FROM || secrets.MAIL_USERNAME }}
 
           cc: ${{ secrets.MAIL_CC }}
@@ -62,3 +67,5 @@ jobs:
 
           html_body: file://mail.html
           ignore_cert: true
+          convert_markdown: true
+          priority: low
