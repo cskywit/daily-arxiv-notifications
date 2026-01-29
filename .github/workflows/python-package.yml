@@ -1,77 +1,69 @@
-name: Arxiv Daily 
+name: Arxiv Daily
 
 on:
+  # 每天定时跑一次（GitHub Actions 的 cron 是 UTC）
+  # 例如：UTC 01:00 = 北京时间 09:00
   schedule:
-    - cron: '0 2 * * mon-fri'
+    - cron: "0 1 * * *"
+  # 允许你在 Actions 页面手动点 Run workflow
   workflow_dispatch:
 
 jobs:
-  build:
-    
+  notify:
     runs-on: ubuntu-latest
-    env:
-      COUNT: echo "python -u main.py"
+
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          # 如果你的项目明确要求 3.8，可以改成 "3.8"
+          python-version: "3.10"
+          cache: "pip"
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Report
-        env:
-          GITHUB: ${{ secrets.GITHUB }}
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Run main.py (generate mail.html)
         run: |
-           echo ${{env.COUNT}}
-           "python -u main.py"
-      - name: Send mail
-        if: ${{ env.COUNT > 0 }}
+          python -u main.py
+
+      - name: Decide whether to send mail
+        run: |
+          # mail.html 存在且非空 -> 发送邮件
+          if [ -s mail.html ]; then
+            echo "SEND_MAIL=1" >> "$GITHUB_ENV"
+            echo "mail.html exists and is non-empty -> will send mail"
+          else
+            echo "SEND_MAIL=0" >> "$GITHUB_ENV"
+            echo "mail.html missing or empty -> skip sending"
+          fi
+
+      - name: Send mail (QQ SMTP, Scheme B)
+        if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          # Specify connection via URL (replaces server_address, server_port, secure,
-          # username and password)
-          #
-          # Format:
-          #
-          #  * smtp://user:password@server:port
-          #  * smtp+starttls://user:password@server:port
-          connection_url: ${{secrets.MAIL_CONNECTION}}
-          # Required mail server address if not connection_url:
-          server_address: ${{secrets.MAIL_SERVER}}
-          # Server port, default 25:
+          # 方案B：使用 Secrets 里的 MAIL_SERVER / MAIL_USERNAME / MAIL_PASSWORD
+          server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
           server_port: 465
-          # Optional whether this connection use TLS (default is true if server_port is 465)
           secure: true
-          # Optional (recommended) mail server username:
-          username: ${{secrets.MAIL_USERNAME}}
-          # Optional (recommended) mail server password:
-          password: ${{secrets.MAIL_PASSWORD}}
-          # Required mail subject:
+
+          username: ${{ secrets.MAIL_USERNAME }}       # 你的QQ邮箱：xxxx@qq.com
+          password: ${{ secrets.MAIL_PASSWORD }}       # QQ邮箱SMTP授权码（不是QQ密码）
+
           subject: Arxiv Papers of Today
-          # Required recipients' addresses:
-          to: ${{secrets.MAIL_TO}}
-          # Required sender full name (address can be skipped):
-          from: ${{secrets.MAIL_FROM}}
-          # Optional plain body:
-          #body: Build job of ${{github.repository}} completed successfully!
-          # Optional HTML body read from file:
+          to: ${{ secrets.MAIL_TO }}
+          from: ${{ secrets.MAIL_FROM }}
+
+          # 这两项如果你没配 Secrets，也没关系：为空时 action 通常会忽略
+          cc: ${{ secrets.MAIL_CC }}
+          bcc: ${{ secrets.MAIL_BCC }}
+
           html_body: file://mail.html
-          # Optional carbon copy recipients:
-          cc: ${{secrets.MAIL_CC}}
-          # Optional blind carbon copy recipients:
-          bcc: ${{secrets.MAIL_BCC}}
-          # Optional recipient of the email response:
-          #reply_to: luke@example.com
-          # Optional Message ID this message is replying to:
-          #in_reply_to: <random-luke@example.com>
-          # Optional unsigned/invalid certificates allowance:
           ignore_cert: true
-          # Optional converting Markdown to HTML (set content_type to text/html too):
-          convert_markdown: true
-          # Optional attachments:
-          #attachments: attachments.zip,git.diff,./dist/static/*.js
-          # Optional priority: 'high', 'normal' (default) or 'low'
-          priority: low

@@ -40,5 +40,6 @@ KEYWORD_LIST = [
     "self-supervised",
     "foundation model",
     "diffusion",
-    "mamba"
+    "mamba",
+    "physics-informed"
 ]
