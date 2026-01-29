@@ -9,8 +9,36 @@ REPO_OWNER = 'abbasturkoglu'
 REPO_NAME = 'arxiv-papers-daily'
 
 # Set new submission url of subject
-NEW_SUB_URL = 'https://arxiv.org/list/cs/new'
+NEW_SUB_URL = 'https://arxiv.org/list/cs.CV/new'
 
 # Keywords to search
-KEYWORD_LIST = [ "rgb-t tracking", "rgb-thermal", "rgb-thermal-tracking",
-                "rgb-t", "rgbt","rgb-t-fusion-tracking","rgb-tir","RGBT Object Tracking"]
+KEYWORD_LIST = [
+    # 医学影像通用
+    "medical image",
+    "medical imaging",
+    "biomedical image",
+
+    # 具体模态
+    "MRI",
+    "CT",
+    "ultrasound",
+    "histopathology",
+    "X-ray",
+
+    # 常见任务
+    "image classification"
+    "image segmentation",
+    "lesion segmentation",
+    "tumor segmentation",
+    "detection",
+    "registration",
+    "diagnosis",
+
+    # 方法（CV常见 + 医学高频）
+    "deep learning",
+    "transformer",
+    "self-supervised",
+    "foundation model",
+    "diffusion",
+    "mamba"
+]
