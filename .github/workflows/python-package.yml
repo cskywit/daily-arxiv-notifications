@@ -1,39 +1,37 @@
 name: Arxiv Daily
 
 on:
-  # GitHub Actions 的 cron 使用 UTC
-  # 下面是：周一到周五，UTC 02:00（北京时间约 10:00）
+  # GitHub Actions cron 使用 UTC 时间
+  # 例如：UTC 02:00 ~= 北京时间 10:00
   schedule:
     - cron: "0 2 * * 1-5"
   workflow_dispatch:
 
 jobs:
-  build:
+  notify:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.10"
           cache: "pip"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
 
-      # 如果 main.py 需要 GitHub token（比如访问 API），就保留这个环境变量
       - name: Run main.py (generate mail.html)
-        env:
-          GITHUB: ${{ secrets.GITHUB }}
         run: |
           python -u main.py
 
-      # 用 mail.html 是否存在且非空，决定是否发送邮件
       - name: Decide whether to send mail
         run: |
           if [ -s mail.html ]; then
@@ -44,26 +42,29 @@ jobs:
             echo "mail.html missing or empty -> skip sending"
           fi
 
-            - name: Send mail (QQ SMTP, Scheme B)
+      - name: Send mail (QQ SMTP, Scheme B)
         if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.MAIL_SERVER }}
+          # Scheme B: SMTP config from secrets
+          server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
           server_port: 465
           secure: true
 
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
+          username: ${{ secrets.MAIL_USERNAME }}       # 3066826998@qq.com
+          password: ${{ secrets.MAIL_PASSWORD }}       # QQ 邮箱 SMTP 授权码
 
           subject: Arxiv Papers of Today
           to: ${{ secrets.MAIL_TO }}
 
-          # from 必填：优先 MAIL_FROM，否则退化为 MAIL_USERNAME（确保永远不为空）
-          from: ${{ secrets.MAIL_FROM || secrets.MAIL_USERNAME }}
+          # ✅ 关键：from 必填
+          # 优先用你已配置的 MAIL_FROM（例如：arxiv bot <3066826998@qq.com>）
+          # 如果 MAIL_FROM 没有设置，则退化为 MAIL_USERNAME，保证永远不为空
+          from: ${{ secrets.MAIL_FROM != '' && secrets.MAIL_FROM || secrets.MAIL_USERNAME }}
 
+          # 可选：不配也没关系
           cc: ${{ secrets.MAIL_CC }}
           bcc: ${{ secrets.MAIL_BCC }}
 
           html_body: file://mail.html
           ignore_cert: true
-
