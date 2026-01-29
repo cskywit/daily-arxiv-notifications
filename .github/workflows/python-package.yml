@@ -1,10 +1,8 @@
 name: Arxiv Daily
 
 on:
-  # GitHub Actions cron 使用 UTC 时间
-  # 例如：UTC 02:00 ~= 北京时间 10:00
   schedule:
-    - cron: "0 2 * * 1-5"
+    - cron: "0 2 * * 1-5"   # 周一到周五 UTC 02:00（北京时间约10点）
   workflow_dispatch:
 
 jobs:
@@ -46,25 +44,18 @@ jobs:
         if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          # Scheme B: SMTP config from secrets
           server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
           server_port: 465
           secure: true
 
           username: ${{ secrets.MAIL_USERNAME }}       # 3066826998@qq.com
-          password: ${{ secrets.MAIL_PASSWORD }}       # QQ 邮箱 SMTP 授权码
+          password: ${{ secrets.MAIL_PASSWORD }}       # QQ SMTP 授权码
 
           subject: Arxiv Papers of Today
           to: ${{ secrets.MAIL_TO }}
 
-          # ✅ 关键：from 必填
-          # 优先用你已配置的 MAIL_FROM（例如：arxiv bot <3066826998@qq.com>）
-          # 如果 MAIL_FROM 没有设置，则退化为 MAIL_USERNAME，保证永远不为空
-          from: ${{ secrets.MAIL_FROM != '' && secrets.MAIL_FROM || secrets.MAIL_USERNAME }}
-
-          # 可选：不配也没关系
-          cc: ${{ secrets.MAIL_CC }}
-          bcc: ${{ secrets.MAIL_BCC }}
+          # ✅ 关键：直接写死，保证 action 一定收到 from（不依赖 secrets）
+          from: "arxiv bot <3066826998@qq.com>"
 
           html_body: file://mail.html
           ignore_cert: true
