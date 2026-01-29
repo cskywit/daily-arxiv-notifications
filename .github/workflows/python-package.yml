@@ -1,11 +1,8 @@
 name: Arxiv Daily
 
 on:
-  # 每天定时跑一次（GitHub Actions 的 cron 是 UTC）
-  # 例如：UTC 01:00 = 北京时间 09:00
   schedule:
     - cron: "0 1 * * *"
-  # 允许你在 Actions 页面手动点 Run workflow
   workflow_dispatch:
 
 jobs:
@@ -19,7 +16,6 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          # 如果你的项目明确要求 3.8，可以改成 "3.8"
           python-version: "3.10"
           cache: "pip"
 
@@ -36,7 +32,6 @@ jobs:
 
       - name: Decide whether to send mail
         run: |
-          # mail.html 存在且非空 -> 发送邮件
           if [ -s mail.html ]; then
             echo "SEND_MAIL=1" >> "$GITHUB_ENV"
             echo "mail.html exists and is non-empty -> will send mail"
@@ -49,19 +44,19 @@ jobs:
         if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          # 方案B：使用 Secrets 里的 MAIL_SERVER / MAIL_USERNAME / MAIL_PASSWORD
           server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
           server_port: 465
           secure: true
 
-          username: ${{ secrets.MAIL_USERNAME }}       # 你的QQ邮箱：xxxx@qq.com
-          password: ${{ secrets.MAIL_PASSWORD }}       # QQ邮箱SMTP授权码（不是QQ密码）
+          username: ${{ secrets.MAIL_USERNAME }}       # xxxx@qq.com
+          password: ${{ secrets.MAIL_PASSWORD }}       # QQ SMTP 授权码（不是QQ密码）
 
           subject: Arxiv Papers of Today
           to: ${{ secrets.MAIL_TO }}
-          from: ${{ secrets.MAIL_FROM }}
 
-          # 这两项如果你没配 Secrets，也没关系：为空时 action 通常会忽略
+          # from 必填：优先用 MAIL_FROM（如 "Arxiv Bot <xxxx@qq.com>"），否则退化为 MAIL_USERNAME
+          from: ${{ secrets.MAIL_FROM || secrets.MAIL_USERNAME }}
+
           cc: ${{ secrets.MAIL_CC }}
           bcc: ${{ secrets.MAIL_BCC }}
 
