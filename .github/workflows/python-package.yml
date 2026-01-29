@@ -2,7 +2,7 @@ name: Arxiv Daily
 
 on:
   schedule:
-    - cron: "0 2 * * 1-5"   # 周一到周五 UTC 02:00（北京时间约10点）
+    - cron: "0 2 * * 1-5"
   workflow_dispatch:
 
 jobs:
@@ -34,27 +34,27 @@ jobs:
         run: |
           if [ -s mail.html ]; then
             echo "SEND_MAIL=1" >> "$GITHUB_ENV"
-            echo "mail.html exists and is non-empty -> will send mail"
           else
             echo "SEND_MAIL=0" >> "$GITHUB_ENV"
-            echo "mail.html missing or empty -> skip sending"
           fi
 
       - name: Send mail (QQ SMTP, Scheme B)
         if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
+          server_address: ${{ secrets.MAIL_SERVER }}
           server_port: 465
           secure: true
 
-          username: ${{ secrets.MAIL_USERNAME }}       # 3066826998@qq.com
-          password: ${{ secrets.MAIL_PASSWORD }}       # QQ SMTP 授权码
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
 
           subject: Arxiv Papers of Today
-          to: ${{ secrets.MAIL_TO }}
 
-          # ✅ 关键：直接写死，保证 action 一定收到 from（不依赖 secrets）
+          # ✅ 关键：先写死收件人，保证 action 有 to
+          to: "3066826998@qq.com"
+
+          # ✅ 写死发件人
           from: "arxiv bot <3066826998@qq.com>"
 
           html_body: file://mail.html
