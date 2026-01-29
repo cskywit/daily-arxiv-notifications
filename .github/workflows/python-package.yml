@@ -44,22 +44,21 @@ jobs:
             echo "mail.html missing or empty -> skip sending"
           fi
 
-      - name: Send mail (Scheme B: QQ SMTP)
+            - name: Send mail (QQ SMTP, Scheme B)
         if: ${{ env.SEND_MAIL == '1' }}
         uses: dawidd6/action-send-mail@v3
         with:
-          # 方案B：不要用 connection_url
-          server_address: ${{ secrets.MAIL_SERVER }}   # smtp.qq.com
+          server_address: ${{ secrets.MAIL_SERVER }}
           server_port: 465
           secure: true
 
-          username: ${{ secrets.MAIL_USERNAME }}       # xxxx@qq.com
-          password: ${{ secrets.MAIL_PASSWORD }}       # QQ邮箱SMTP授权码（不是QQ密码）
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
 
           subject: Arxiv Papers of Today
           to: ${{ secrets.MAIL_TO }}
 
-          # from 必填：优先 MAIL_FROM，否则退化为 MAIL_USERNAME
+          # from 必填：优先 MAIL_FROM，否则退化为 MAIL_USERNAME（确保永远不为空）
           from: ${{ secrets.MAIL_FROM || secrets.MAIL_USERNAME }}
 
           cc: ${{ secrets.MAIL_CC }}
@@ -67,5 +66,4 @@ jobs:
 
           html_body: file://mail.html
           ignore_cert: true
-          convert_markdown: true
-          priority: low
+
